@@ -8,6 +8,7 @@ Unlike broadcast, multicast traffic only goes to devices that are part of the mu
 
 
 The following topology will be used:
+
 ![Topology](/Topology/Multicast.PNG)
 
 
