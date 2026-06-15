@@ -152,31 +152,56 @@ Group: 224.0.1.40, RP: 192.168.0.1, uptime 00:15:01, expires never
 
 ```
 
+
+### Verification:
+
+On R1 we can ping the destination group address 239.1.1.10
+
+```bash
+R1#ping 239.1.1.10 source 172.19.0.1 repeat 100
+Type escape sequence to abort.
+Sending 100, 100-byte ICMP Echos to 239.1.1.10, timeout is 2 seconds:
+Packet sent with a source address of 172.19.0.1
+
+Reply to request 0 from 172.19.1.1, 3 ms
+Reply to request 0 from 172.19.1.1, 4 ms
+Reply to request 1 from 172.19.1.1, 2 ms
+Reply to request 2 from 172.19.1.1, 3 ms
+Reply to request 3 from 172.19.1.1, 2 ms
+Reply to request 4 from 172.19.1.1, 1 ms
+Reply to request 5 from 172.19.1.1, 1 ms
+Reply to request 6 from 172.19.1.1, 1 ms
+
+```
+
+### Verifying the Multicast routing table:
+
 To verify Multicast routing table (S,G) the shortest path tree:
 
 ``` bash
 R5#sh ip mroute
 !output ommitted for brevity!
 
-(*, 239.1.1.10), 00:17:01/stopped, RP 192.168.0.1, flags: SJCLF
-  Incoming interface: Ethernet0/3, RPF nbr 10.0.0.17
+(*, 239.1.1.10), 00:18:18/stopped, RP 192.168.0.1, flags: SJCL
+  Incoming interface: Ethernet0/0, RPF nbr 10.0.0.17
   Outgoing interface list:
-    Ethernet0/0, Forward/Sparse, 00:16:59/00:02:03
+    Ethernet0/1, Forward/Sparse, 00:18:16/00:02:42
 
-(172.19.0.10, 239.1.1.10), 00:02:03/00:03:26, flags: LFT
-  Incoming interface: Ethernet0/0, RPF nbr 0.0.0.0, Registering
+(172.19.0.1, 239.1.1.10), 00:00:05/00:02:54, flags: LJT
+  Incoming interface: Ethernet0/0, RPF nbr 10.0.0.17
   Outgoing interface list:
-    Ethernet0/3, Forward/Sparse, 00:02:03/00:03:23
+    Ethernet0/1, Forward/Sparse, 00:00:05/00:02:54
 
-(10.0.0.18, 239.1.1.10), 00:03:07/00:02:56, flags: LFT
-  Incoming interface: Ethernet0/3, RPF nbr 0.0.0.0
-  Outgoing interface list:
-    Ethernet0/0, Forward/Sparse, 00:03:07/00:02:03
+(*, 224.0.1.40), 00:18:18/00:02:23, RP 192.168.0.1, flags: SJPCL
+  Incoming interface: Ethernet0/0, RPF nbr 10.0.0.17
+  Outgoing interface list: Null
 
-(*, 224.0.1.40), 00:17:00/00:02:06, RP 192.168.0.1, flags: SJCL
-  Incoming interface: Ethernet0/3, RPF nbr 10.0.0.17
-  Outgoing interface list:
-    Ethernet0/0, Forward/Sparse, 00:16:59/00:02:06
+
 ```
-
+### Verifying bandwidth Utilization:
+```bash
+R2#sh ip mfib active
+Active Multicast Sources - sending >= 4 kbps
+Default
+```
 
