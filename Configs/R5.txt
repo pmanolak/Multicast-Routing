@@ -1,0 +1,157 @@
+
+Building configuration...
+
+Current configuration : 1745 bytes
+!
+version 15.7
+service timestamps debug datetime msec
+service timestamps log datetime msec
+no service password-encryption
+!
+hostname R5
+!
+boot-start-marker
+boot-end-marker
+!
+!
+logging discriminator EXCESS severity drops 6 msg-body drops EXCESSCOLL
+logging buffered 50000
+logging console discriminator EXCESS
+!
+no aaa new-model
+!
+!
+!
+mmi polling-interval 60
+no mmi auto-configure
+no mmi pvc
+mmi snmp-timeout 180
+!
+!
+!
+!
+!
+no ip icmp rate-limit unreachable
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+
+
+!
+!
+!
+!
+no ip domain lookup
+ip multicast-routing
+ip cef
+no ipv6 cef
+!
+multilink bundle-name authenticated
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+redundancy
+!
+!
+ip tcp synwait-time 5
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+interface Ethernet0/0
+ description LINK TO R3
+ ip address 10.0.0.18 255.255.255.252
+ ip pim sparse-mode
+ duplex auto
+!
+interface Ethernet0/1
+ description LINK TO MULTICAST RECEIVER
+ ip address 172.19.1.1 255.255.255.0
+ ip pim sparse-mode
+ ip igmp join-group 239.1.1.10
+ duplex auto
+!
+interface Ethernet0/2
+ no ip address
+ duplex auto
+!
+interface Ethernet0/3
+ no ip address
+ duplex auto
+!
+!
+router eigrp EIGRP
+ !
+ address-family ipv4 unicast autonomous-system 100
+  !
+  af-interface default
+   bandwidth-percent 25
+  exit-af-interface
+  !
+  af-interface Ethernet0/1
+   passive-interface
+  exit-af-interface
+  !
+  topology base
+  exit-af-topology
+  network 10.0.0.16 0.0.0.3
+  network 172.19.1.0 0.0.0.255
+ exit-address-family
+!
+ip forward-protocol nd
+!
+!
+no ip http server
+no ip http secure-server
+ip pim rp-address 192.168.0.1
+!
+ipv6 ioam timestamp
+!
+!
+!
+control-plane
+!
+!
+!
+!
+!
+!
+!
+!
+line con 0
+ exec-timeout 0 0
+ privilege level 15
+ logging synchronous
+line aux 0
+ exec-timeout 0 0
+ privilege level 15
+ logging synchronous
+line vty 0 4
+ login
+ transport input none
+!
+!
+end

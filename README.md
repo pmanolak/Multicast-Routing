@@ -6,6 +6,7 @@ Multicast is a way of sending a single stream of data to multiple devices at onc
 Unlike broadcast, multicast traffic only goes to devices that are part of the multicast group.
 
 
+
 The following topology will be used:
 ![Topology](/Topology/Multicast.PNG)
 
@@ -14,21 +15,47 @@ Multicast uses the following protocols:
 -  IGMP (layer 2 multicast)
 -  PIM (layer 3 multicast)
 
+## Activating Multicast 
+By default, Multiccast routing is diabled. Therefore for multicast to function, it is activated by the following command:
 
-## IGMP 
-IGMP is the protocol used by devices (hosts or routers simulating hosts) to tell the local router that they want to join a multicast group.
+```bash
+R5#conf t
+Enter configuration commands, one per line.  End with CNTL/Z.
+R5(config)#ip multicast-routing
+R5(config)#
+R5(config)#end
+```
 
-For example, if a host wants to receive data sent to 239.1.1.10, it sends an IGMP join request.
+## Internet Group Management Protocol (IGMP)
+IGMP is the protocol used by mutlicast capable receivers to tell the local router that they want to join a multicast group.
 
-Routers use this info to know which interfaces have active receivers.
+For example, if a host wants to receive data sent to 239.1.1.10, it sends an IGMP join request to the router or switch it is connected to.
 
-IGMP can explictly call a source from which it will receive a multicast stream (Source specific Multicast)
+IGMP runs on the LAN facing interface on the same subnet as the receivers.
+
+IGMP is usually configured on the Last Hop Router, that is the router on the router interface directly connected to the multcast receiver.
+
+In the topology above, R5 is the LHR.
+
+Therefore enabling IGMP on 172.19.1.0/24 subnet is crucial.
+
+```bash
+R5(config)#int e0/1
+R5(config-if)#ip igmp version 2
+R5(config-if)#ip igmp join-group 239.1.1.10
+R5(config-if)#end
+R5#
+```
+
+**NOTE:** IGMPv2 usually sends a *leave-group message* so that when the last host on the multicast group leaves, it sends a leave message to 224.0.0.2 so that the routers stop fowarding the multicast stream/traffic
+
+
 
 To verify IGMP:
 
 ``` bash
 
-R5#sh ip igmp interface e0/0
+R5#sh ip igmp interface e0/1
 Ethernet0/0 is up, line protocol is up
   ! Output omitted for brevity
   Multicast designated router (DR) is 172.19.1.1 (this system)
@@ -42,7 +69,7 @@ Ethernet0/0 is up, line protocol is up
 R5#sh ip igmp groups
 IGMP Connected Group Membership
 Group Address    Interface                Uptime    Expires   Last Reporter   Group Accounted
-239.1.1.10       Ethernet0/0              00:08:51  00:02:11  172.19.1.1
+239.1.1.10       Ethernet0/1              00:08:51  00:02:11  172.19.1.1
 
 ```
 
@@ -55,15 +82,53 @@ PIM is the routing protocol used to build multicast distribution trees between s
 
 In sparse mode, multicast traffic is not forwarded by default. It’s only sent when receivers explicitly request to join a group through IGMP ("pull method").
 
+All routers whose interfaces are participating in Multicast must be configured in PIM-Sparse mode.
+
+The following is a sample configuration of this on R5:
+
+```bash
+interface Ethernet0/0
+ description LINK TO R3
+ ip address 10.0.0.18 255.255.255.252
+ duplex auto
+!
+interface Ethernet0/1
+ description LINK TO MULTICAST RECEIVER
+ ip address 172.19.1.1 255.255.255.0
+ ip igmp join-group 239.1.1.10
+ duplex auto
+!
+R5#conf t
+Enter configuration commands, one per line.  End with CNTL/Z.
+R5(config)#ip multicast-routing
+R5(config)#int range e0/0-1
+R5(config-if-range)#ip pim sparse-mode
+
+```
+### Rendezvous point:
+
 A central point called the Rendezvous Point (RP) is manually configured in this lab. It acts as a meeting place for sources and receivers.
 
 Once routers learn about active receivers, they build a multicast tree from the source to the receivers via the RP.
+
+All routers (including the RP router) must be configured with the RP address.
+
+```bash
+
+R1#conf t
+Enter configuration commands, one per line.  End with CNTL/Z.
+R1(config)#ip pim rp-address 192.168.0.1
+
+```
+
+### Shared Path tree:
 
 PIM-SM is used by routers to build multicast distribution trees.
 
 When a source starts sending multicast traffic, it is forwarded to the Rendezvous Point (RP) first — this forms the shared tree (RPT).
 
 Receivers also join via the RP, and traffic flows from source → RP → receiver.
+
 
 
 ### Switching to a Better Path (Shortest-Path Tree)
@@ -98,7 +163,7 @@ R5#sh ip mroute
   Outgoing interface list:
     Ethernet0/0, Forward/Sparse, 00:16:59/00:02:03
 
-(172.19.1.1, 239.1.1.10), 00:02:03/00:03:26, flags: LFT
+(172.19.0.10, 239.1.1.10), 00:02:03/00:03:26, flags: LFT
   Incoming interface: Ethernet0/0, RPF nbr 0.0.0.0, Registering
   Outgoing interface list:
     Ethernet0/3, Forward/Sparse, 00:02:03/00:03:23
